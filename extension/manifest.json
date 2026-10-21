@@ -1,0 +1,26 @@
+{
+  "manifest_version": 3,
+  "name": "Golden Crown BLS Bridge",
+  "version": "1.0.0",
+  "description": "Executes queued booking tasks inside your real, logged-in BLS session.",
+  "permissions": ["storage", "alarms", "scripting", "tabs", "notifications"],
+  "host_permissions": [
+    "https://algeria.blsspainvisa.com/*",
+    "http://localhost/*",
+    "https://*/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Golden Crown BLS Bridge"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://algeria.blsspainvisa.com/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}

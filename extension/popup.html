@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Golden Crown BLS Bridge</title>
+  <style>
+    :root {
+      --gold: #c9a227;
+      --gold-l: #e8c86a;
+      --ink: #0b1020;
+    }
+    * { box-sizing: border-box; }
+    body {
+      width: 320px;
+      margin: 0;
+      font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+      background: linear-gradient(160deg, #121a33, #0b1020);
+      color: #e8ecf8;
+    }
+    header {
+      display: flex; align-items: center; gap: 9px;
+      padding: 13px 14px;
+      border-bottom: 1px solid rgba(201,162,39,.25);
+      background: linear-gradient(120deg, rgba(201,162,39,.14), transparent);
+    }
+    header svg { width: 26px; height: 26px; flex-shrink: 0; }
+    .title { font-size: 13px; font-weight: 800; line-height: 1.15; }
+    .sub { font-size: 9px; color: #94a3b8; }
+    .body { padding: 13px 14px; display: grid; gap: 11px; }
+    label { display: block; font-size: 10px; font-weight: 700; color: #cbd5e1; margin-bottom: 4px; }
+    input[type=text], input[type=url] {
+      width: 100%; padding: 8px 10px; border-radius: 9px;
+      border: 1px solid rgba(201,162,39,.3); background: rgba(11,16,32,.8);
+      color: #e8ecf8; font-size: 12px; outline: none;
+    }
+    input:focus { border-color: var(--gold-l); box-shadow: 0 0 0 3px rgba(201,162,39,.16); }
+    .code { letter-spacing: .28em; text-align: center; font-family: ui-monospace, Menlo, monospace; font-weight: 800; font-size: 15px; text-transform: uppercase; }
+    button {
+      width: 100%; padding: 9px; border-radius: 9px; border: none; cursor: pointer;
+      font-weight: 800; font-size: 12px;
+      background: linear-gradient(135deg, #e8c86a, #c9a227 55%, #a8861f);
+      color: #1a1405;
+    }
+    button.ghost { background: transparent; border: 1px solid rgba(201,162,39,.35); color: #f0d98a; }
+    button:disabled { opacity: .5; cursor: not-allowed; }
+    .row { display: flex; gap: 8px; }
+    .row button { flex: 1; }
+    .status {
+      display: flex; align-items: center; justify-content: space-between; gap: 8px;
+      padding: 8px 10px; border-radius: 9px; font-size: 10px; font-weight: 700;
+      background: rgba(11,16,32,.6); border: 1px solid rgba(201,162,39,.18);
+    }
+    .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .on { background: #34d399; box-shadow: 0 0 0 3px rgba(52,211,153,.18); }
+    .off { background: #64748b; }
+    .err { background: #f87171; }
+    .stats { display: grid; grid-template-columns: repeat(4,1fr); gap: 6px; text-align: center; }
+    .stat { background: rgba(11,16,32,.6); border: 1px solid rgba(201,162,39,.15); border-radius: 8px; padding: 6px 2px; }
+    .stat b { display: block; font-size: 13px; color: var(--gold-l); }
+    .stat span { font-size: 8px; color: #94a3b8; }
+    .hint { font-size: 9.5px; line-height: 1.5; color: #94a3b8; }
+    .hint b { color: var(--gold-l); }
+    .log { max-height: 96px; overflow-y: auto; font-size: 9px; font-family: ui-monospace, Menlo, monospace; background: rgba(0,0,0,.35); border-radius: 8px; padding: 7px; }
+    .log div { color: #cbd5e1; padding: 1px 0; }
+    .err-text { color: #fca5a5; }
+  </style>
+</head>
+<body>
+  <header>
+    <svg viewBox="0 0 64 64" aria-hidden>
+      <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="#f7e7a1"/><stop offset="100%" stop-color="#c9a227"/>
+      </linearGradient></defs>
+      <path fill="url(#g)" d="M8 46 L14 20 L25 32 L32 12 L39 32 L50 20 L56 46 Z"/>
+      <rect x="8" y="48" width="48" height="6" rx="3" fill="url(#g)"/>
+    </svg>
+    <div>
+      <div class="title">Golden Crown Bridge</div>
+      <div class="sub">BLS booking executor</div>
+    </div>
+  </header>
+
+  <div class="body">
+    <div class="status">
+      <span class="row" style="align-items:center;gap:7px">
+        <span id="dot" class="dot off"></span>
+        <span id="statusText">Loading…</span>
+      </span>
+      <span id="pollAge" style="color:#94a3b8;font-weight:600"></span>
+    </div>
+
+    <div>
+      <label>Server URL</label>
+      <input id="server" type="url" placeholder="http://localhost:3000" />
+    </div>
+
+    <div>
+      <label>Pairing code (from the website)</label>
+      <input id="pairCode" class="code" type="text" maxlength="6" placeholder="ABC123" />
+    </div>
+
+    <div class="row">
+      <button id="save">Save &amp; connect</button>
+      <button id="toggle" class="ghost">Pause</button>
+    </div>
+
+    <div class="row">
+      <button id="diag" class="ghost" style="font-size:10px">🔍 Diagnose BLS page</button>
+      <button id="openBLS" class="ghost" style="font-size:10px">↗ Open BLS</button>
+    </div>
+
+    <div class="stats">
+      <div class="stat"><b id="sPoll">0</b><span>POLLS</span></div>
+      <div class="stat"><b id="sTask">0</b><span>TASKS</span></div>
+      <div class="stat"><b id="sDone">0</b><span>DONE</span></div>
+      <div class="stat"><b id="sFail">0</b><span>FAIL</span></div>
+    </div>
+
+    <div class="log" id="log"></div>
+
+    <p class="hint">
+      <b>How it works:</b> log in to BLS once in this browser, then keep this
+      popup open. At the release minute the extension opens the booking page,
+      fills every field, submits, and sends the CAPTCHA back to the operator
+      console for a human solve.
+    </p>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
